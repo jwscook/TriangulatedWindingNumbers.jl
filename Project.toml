@@ -1,0 +1,13 @@
+name = "TriangulatedWindingNumbers"
+uuid = "73cb218b-8b32-4ab2-aa8b-a5b1bf36c102"
+authors = ["James Cook <cookjws@gmail.com>"]
+version = "0.1.0"
+
+[deps]
+SeriesAccelerators = "22ff4e98-c178-11e8-26b3-d15618a5f822"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
