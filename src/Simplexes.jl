@@ -86,8 +86,7 @@ end
 
 function windingnumber(s::Simplex)
   radians = windingangle(s)
-  isnan(radians) && return Int64(0)
-  return Int64(round(radians / 2π))
+  return isfinite(radians) ? Int64(round(radians / 2π)) : Int64(0)
 end
 
 
