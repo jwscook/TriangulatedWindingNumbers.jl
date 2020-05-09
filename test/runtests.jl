@@ -1,7 +1,9 @@
-using Test, TriangulatedWindingNumbers
-using TriangulatedWindingNumbers: Vertex, Simplex, windingnumber, windingangle, middle
+using Random, Test, TriangulatedWindingNumbers
+using TriangulatedWindingNumbers: Vertex, Simplex, windingnumber, windingangle, centroid
 
 @testset "TriangulatedWindingNumbers tests" begin
+
+  Random.seed!(0)
 
   @testset "Simplex tests" begin
     irrelevant = [0.0, 0.0]
@@ -49,8 +51,8 @@ using TriangulatedWindingNumbers: Vertex, Simplex, windingnumber, windingangle, 
       solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
         gridisize, xtol_abs=xtol_abs)
       for (s, reason) ∈ solutions
-        @test isapprox(middle(s)[1], real(root), atol=xtol_abs)
-        @test isapprox(middle(s)[2], imag(root), atol=xtol_abs)
+        @test isapprox(centroid(s)[1], real(root), atol=xtol_abs)
+        @test isapprox(centroid(s)[2], imag(root), atol=xtol_abs)
       end
     end
   end
