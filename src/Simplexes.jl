@@ -29,16 +29,16 @@ end
 
 bestvertex(s::Simplex) = getvertex(s, 1)
 
-function findcentroid(f::T, s::Simplex, vertextoignore::Vertex
+function centroidignorevertex(f::T, s::Simplex, vertextoignore::Vertex
     ) where {T<:Function, U<:Function}
   g(v) = areidentical(v, vertextoignore) ? zero(position(v)) : position(v)
   x = mapreduce(g, +, s) / (length(s) - 1)
   return Vertex(x, f(x))
 end
 
-middle(s::Simplex) = mapreduce(position, +, s) / length(s)
+centroid(s::Simplex) = mapreduce(position, +, s) / length(s)
 function closestomiddlevertex(s::Simplex)
-  mid = middle(s)
+  mid = centroid(s)
   _, index = findmin(map(v->sum((position(v) - mid).^2), s))
   return s[index]
 end

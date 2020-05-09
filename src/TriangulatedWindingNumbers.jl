@@ -66,7 +66,7 @@ function _solve(f::T, simplices::Vector{Simplex}, xtol_abs::AbstractVector{<:Rea
       windings = windingnumber(simplex)
       windings == 0 && (push!(deletions, i); continue)
       innermost = closestomiddlevertex(simplex)
-      Δt = @elapsed centroid = findcentroid(f, simplex, innermost)
+      Δt = @elapsed centroid = centroidignorevertex(f, simplex, innermost)
       for vertex ∈ simplex
         areidentical(vertex, innermost) && continue
         newsimplex = deepcopy(simplex)
