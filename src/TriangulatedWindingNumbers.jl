@@ -4,12 +4,13 @@ include("Vertexes.jl")
 include("Simplexes.jl")
 
 function solve(f::T, lower::AbstractVector{U}, upper::AbstractVector{V},
-               n::Int; kwargs...
+               gridsize::Union{Int, Vector{Int}}; kwargs...
                ) where {T<:Function, U<:Number, V<:Number}
   dim = length(lower)
-  position(i) = (i .- 1) ./ (n - 1) .* (upper .- lower) .+ lower
+  typeof(gridsize) <: Real && (gridsize = gridsize .* ones(Int, dim))
+  position(i) = (i .- 1) ./ (gridsize .- 1) .* (upper .- lower) .+ lower
   index2values = Dict()
-  for ii ∈ CartesianIndices(Tuple(n * ones(Int, dim)))
+  for ii ∈ CartesianIndices(Tuple(gridsize .* ones(Int, dim)))
     index = collect(Tuple(ii))
     x = position(index)
     index2values[index] = f(x)
@@ -18,12 +19,12 @@ function solve(f::T, lower::AbstractVector{U}, upper::AbstractVector{V},
   VT1 = promote_type(U, V)
   VT2 = typeof(first(index2values)[2])
   function generatesimplices!(simplices, direction)
-    for ii ∈ CartesianIndices(Tuple((n * ones(Int, dim))))
+    for ii ∈ CartesianIndices(Tuple((gridsize .* ones(Int, dim))))
       vertices = Vector{Vertex{VT1, VT2}}()
       index = collect(Tuple(ii))
       for i ∈ 1:dim + 1
         vertexindex = [index[j] + ((j == i) ? direction : 0) for j ∈ 1:dim]
-        any(vertexindex .> n) && continue
+        any(vertexindex .> gridsize) && continue
         any(vertexindex .< 1) && continue
         vertex = Vertex{VT1, VT2}(position(vertexindex), index2values[vertexindex])
         push!(vertices, vertex)
@@ -33,7 +34,7 @@ function solve(f::T, lower::AbstractVector{U}, upper::AbstractVector{V},
   end
   generatesimplices!(simplices, 1)
   generatesimplices!(simplices, -1)
-  @assert length(simplices) == 2 * n^2
+  @assert length(simplices) == 2 * prod(gridsize)
 
   kwargsdict = Dict(kwargs)
   if haskey(kwargsdict, :xtol_rel) && !haskey(kwargsdict, :xtol_abs)

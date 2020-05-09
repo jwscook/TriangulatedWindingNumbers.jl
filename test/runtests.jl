@@ -37,7 +37,7 @@ using TriangulatedWindingNumbers: Vertex, Simplex, windingnumber, windingangle, 
 
   @testset "End-to-end tests" begin
     for i in 1:10
-      n = rand(2:10)
+      gridisize = [rand(2:10), rand(2:10)]
       xtol_abs=10.0^(-rand(3:15))
       function mock(x::Vector, root)
         return (x[1] + im * x[2]) - root
@@ -47,7 +47,7 @@ using TriangulatedWindingNumbers: Vertex, Simplex, windingnumber, windingangle, 
       lower = collect(reim(root)) .- rand(2)
       upper = collect(reim(root)) .+ rand(2)
       solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
-                                       n, xtol_abs=xtol_abs)
+        gridisize, xtol_abs=xtol_abs)
       for (s, reason) ∈ solutions
         @test isapprox(middle(s)[1], real(root), atol=xtol_abs)
         @test isapprox(middle(s)[2], imag(root), atol=xtol_abs)
