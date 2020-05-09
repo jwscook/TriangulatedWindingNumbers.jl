@@ -1,5 +1,5 @@
 using Test, TriangulatedWindingNumbers
-using TriangulatedWindingNUmbers: Vertex, Simplex, windingnumber, windingangle, middle
+using TriangulatedWindingNumbers: Vertex, Simplex, windingnumber, windingangle, middle
 
 @testset "TriangulatedWindingNumbers tests" begin
 

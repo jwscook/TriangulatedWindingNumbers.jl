@@ -55,16 +55,6 @@ function _solve(f::T, simplices::Vector{Simplex}, xtol_abs::AbstractVector{<:Rea
   xtol_rel = get(kwargs, :xtol_rel, zeros(size(xtol_abs)))
   ftol_rel = get(kwargs, :ftol_rel, eps())
   stopval = get(kwargs, :stopval, 0.0)
-  β = get(kwargs, :β, 0.5)
-
-  @assert 0 < β < 1 "0 < $β < 1"
-
-  function Vertexlocal(centroid::Vertex{T, U}, ϵ::Number, other::Vertex{T, U}
-      ) where {T, U}
-    x = centroid + ϵ * (centroid - other)
-    return Vertex(x, f(x))
-  end
-  contract(centroid, other) = Vertexlocal(centroid, -β, other)
 
   totaltime = 0.0
   solutions = Vector{Tuple{eltype(simplices), Symbol}}()

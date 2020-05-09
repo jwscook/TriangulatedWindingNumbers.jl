@@ -5,25 +5,6 @@ struct Simplex{T<:Number, U<:Complex}
     return new{T,U}(vertices)
   end
 end
-function Simplex(f::T, ic::AbstractVector{U}, initial_step::AbstractVector{V}
-    ) where {T<:Function, U<:Number, V<:Number}
-  dim = length(ic)
-  positions = Vector{Vector{promote_type(U,V)}}()
-  for i ∈ 1:dim+1
-    x = [ic[j] + ((j == i) ? initial_step[j] : zero(V)) for j ∈ 1:dim]
-    push!(positions, x)
-  end
-  return Simplex(f, positions)
-end
-function Simplex(f::T, positions::U
-    ) where {T<:Function, W<:Number, V<:AbstractVector{W}, U<:AbstractVector{V}}
-  dim = length(positions) - 1
-  vertex = Vertex(positions[1], f(positions[1]))
-  vertices = Vector{typeof(vertex)}()
-  push!(vertices, vertex)
-  map(i->push!(vertices, Vertex(positions[i], f(positions[i]))), 2:dim+1)
-  return Simplex(vertices)
-end
 
 import Base.length, Base.iterate, Base.push!, Base.iterate, Base.getindex
 import Base.eachindex, Base.sort!
@@ -37,8 +18,6 @@ Base.sort!(s::Simplex; kwargs...) = sort!(s.vertices; kwargs...)
 
 remove!(s::Simplex, v::Vertex) = filter!(x -> !areidentical(x, v), s.vertices)
 
-dimensionality(s::Simplex) = length(s) - 1
-
 sortbyangle(s::Simplex) = sort!(s, by=v->angle(value(v)))
 issortedbyangle(s::Simplex) = issorted(s, by=v->angle(value(v)))
 
@@ -49,13 +28,6 @@ function getvertex(s::Simplex, i::Int)
 end
 
 bestvertex(s::Simplex) = getvertex(s, 1)
-worstvertex(s::Simplex) = getvertex(s, length(s))
-secondworstvertex(s::Simplex) = getvertex(s, length(s)-1)
-
-function findcentroid(f::T, s::Simplex, vertexfinder::U=worstvertex
-    ) where {T<:Function, U<:Function}
-  return findcentroid(f, s, vertexfinder(s))
-end
 
 function findcentroid(f::T, s::Simplex, vertextoignore::Vertex
     ) where {T<:Function, U<:Function}
@@ -80,7 +52,6 @@ function swap!(s::Simplex, this::Vertex, forthat::Vertex)
   @assert length(s) == lengthbefore
   return nothing
 end
-swapworst!(s::Simplex, forthis::Vertex) = swap!(s, worstvertex(s), forthis)
 
 function assessconvergence(simplex, xtol_abs, xtol_rel, ftol_rel, stopval)
   abs(value(bestvertex(simplex))) <= stopval && return true, :STOPVAL_REACHED
