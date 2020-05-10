@@ -29,7 +29,10 @@ function getvertex(s::Simplex, i::Int)
   return s[i]
 end
 
-bestvertex(s::Simplex) = getvertex(s, 1)
+function minabsvaluevertex(s::Simplex)
+  _, index = findmin(map(v -> abs(value(v)), s))
+  return s[index]
+end
 
 function centroidignorevertex(f::T, s::Simplex, vertextoignore::Vertex
     ) where {T<:Function, U<:Function}
@@ -56,7 +59,7 @@ function swap!(s::Simplex, this::Vertex, forthat::Vertex)
 end
 
 function assessconvergence(simplex, xtol_abs, xtol_rel, ftol_rel, stopval)
-  abs(value(bestvertex(simplex))) <= stopval && return true, :STOPVAL_REACHED
+  abs(value(minabsvaluevertex(simplex))) <= stopval && return true, :STOPVAL_REACHED
   allxtol = true
   allftol = true
   @inbounds for vi ∈ eachindex(simplex)
