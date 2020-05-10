@@ -21,6 +21,8 @@ remove!(s::Simplex, v::Vertex) = filter!(x -> !areidentical(x, v), s.vertices)
 sortbyangle(s::Simplex) = sort!(s, by=v->angle(value(v)))
 issortedbyangle(s::Simplex) = issorted(s, by=v->angle(value(v)))
 
+dimensionality(s::Simplex) = length(s) - 1
+
 function getvertex(s::Simplex, i::Int)
   @assert 1 <= i <= length(s)
   @assert issortedbyangle(s)
