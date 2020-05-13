@@ -8,7 +8,7 @@ struct Simplex{T<:Number, U<:Complex}
 end
 
 import Base.length, Base.iterate, Base.push!, Base.iterate, Base.getindex
-import Base.eachindex, Base.sort!
+import Base.eachindex, Base.sort!, Base.setindex!
 Base.length(s::Simplex) = length(s.vertices)
 Base.push!(s::Simplex, v::Vertex) = push!(s.vertices, v)
 Base.iterate(s::Simplex) = iterate(s.vertices)
@@ -16,10 +16,13 @@ Base.iterate(s::Simplex, counter) = iterate(s.vertices, counter)
 Base.getindex(s::Simplex, index) = s.vertices[index]
 Base.eachindex(s::Simplex) = eachindex(s.vertices)
 Base.sort!(s::Simplex; kwargs...) = sort!(s.vertices; kwargs...)
+function Base.setindex!(s::Simplex, entry, index)
+  s.vertices[index] = entry
+  sortbyangle!(s)
+  return nothing
+end
 
-remove!(s::Simplex, v::Vertex) = filter!(x -> !areidentical(x, v), s.vertices)
-
-sortbyangle(s::Simplex) = sort!(s, by=v->angle(value(v)))
+sortbyangle!(s::Simplex) = sort!(s, by=v->angle(value(v)))
 issortedbyangle(s::Simplex) = issorted(s, by=v->angle(value(v)))
 
 dimensionality(s::Simplex) = length(s) - 1
@@ -53,12 +56,13 @@ function closestomiddlevertex(s::Simplex)
 end
 
 function swap!(s::Simplex, this::Vertex, forthat::Vertex)
-  lengthbefore = length(s)
-  remove!(s, this)
-  @assert length(s) == lengthbefore - 1
-  push!(s, forthat)
-  sortbyangle(s)
-  @assert length(s) == lengthbefore
+  index = 0
+  for (i,v) ∈ enumerate(s)
+    areidentical(v, this) && (index = i; break)
+  end
+  @assert index != 0
+  s[index] = forthat
+  @assert issortedbyangle(s)
   return nothing
 end
 
