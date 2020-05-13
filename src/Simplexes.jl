@@ -41,11 +41,11 @@ maxabsvaluevertex(s::Simplex) = findabsvaluevertex(s, findmax)
 function centroidignorevertex(f::T, s::Simplex, vertextoignore::Vertex
     ) where {T<:Function, U<:Function}
   g(v) = areidentical(v, vertextoignore) ? zero(position(v)) : position(v)
-  x = mapreduce(v -> g(v) / (length(s) - 1), +, s)
+  x = mapreduce(g, +, s) ./ (length(s) - 1)
   return Vertex(x, f(x))
 end
 
-centroid(s::Simplex) = mapreduce(v -> position(v) ./ length(s), +, s)
+centroid(s::Simplex) = mapreduce(position, +, s) ./ length(s)
 function closestomiddlevertex(s::Simplex)
   mid = centroid(s)
   _, index = findmin(map(v->sum((position(v) - mid).^2), s))
@@ -71,7 +71,7 @@ function assessconvergence(simplex, config::NamedTuple)
 
   toprocess = Set{Int}(1)
   processed = Set{Int}()
-  @inbounds while !isempty(toprocess)
+  while !isempty(toprocess)
     vi = pop!(toprocess)
     v = getvertex(simplex, vi)
     connectedto = Set{Int}()
@@ -90,7 +90,7 @@ function assessconvergence(simplex, config::NamedTuple)
   allxtol && return true, :XTOL_REACHED
 
   allftol = true
-  @inbounds for (vi, v) ∈ enumerate(simplex)
+  for (vi, v) ∈ enumerate(simplex)
     for qi ∈ vi+1:length(simplex)
       q = getvertex(simplex, qi)
       allftol &= all(isapprox(value(v), value(q), rtol=config[:ftol_rel], atol=0))
