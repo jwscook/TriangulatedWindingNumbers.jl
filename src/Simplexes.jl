@@ -1,6 +1,7 @@
 struct Simplex{T<:Number, U<:Complex}
-  vertices::Vector{Vertex{T,U}}
-  function Simplex(vertices::Vector{Vertex{T,U}}) where {T<:Number, U<:Complex}
+  vertices::AbstractVector{Vertex{T,U}}
+  function Simplex{T,U}(vertices::AbstractVector{Vertex{T,U}}
+      ) where {T<:Number, U<:Complex}
     sort!(vertices, by=v->angle(value(v)))
     return new{T,U}(vertices)
   end
@@ -29,19 +30,22 @@ function getvertex(s::Simplex, i::Int)
   return s[i]
 end
 
-function minabsvaluevertex(s::Simplex)
-  _, index = findmin(map(v -> abs(value(v)), s))
+function findabsvaluevertex(s::Simplex, op::T) where {T<:Function}
+  _, index = op(map(v -> abs(value(v)), s))
   return s[index]
 end
+
+minabsvaluevertex(s::Simplex) = findabsvaluevertex(s, findmin)
+maxabsvaluevertex(s::Simplex) = findabsvaluevertex(s, findmax)
 
 function centroidignorevertex(f::T, s::Simplex, vertextoignore::Vertex
     ) where {T<:Function, U<:Function}
   g(v) = areidentical(v, vertextoignore) ? zero(position(v)) : position(v)
-  x = mapreduce(g, +, s) / (length(s) - 1)
+  x = mapreduce(v -> g(v) / (length(s) - 1), +, s)
   return Vertex(x, f(x))
 end
 
-centroid(s::Simplex) = mapreduce(position, +, s) / length(s)
+centroid(s::Simplex) = mapreduce(v -> position(v) ./ length(s), +, s)
 function closestomiddlevertex(s::Simplex)
   mid = centroid(s)
   _, index = findmin(map(v->sum((position(v) - mid).^2), s))
@@ -58,22 +62,42 @@ function swap!(s::Simplex, this::Vertex, forthat::Vertex)
   return nothing
 end
 
-function assessconvergence(simplex, xtol_abs, xtol_rel, ftol_rel, stopval)
-  abs(value(minabsvaluevertex(simplex))) <= stopval && return true, :STOPVAL_REACHED
-  allxtol = true
-  allftol = true
-  @inbounds for vi ∈ eachindex(simplex)
+function assessconvergence(simplex, config::NamedTuple)
+  if abs(value(minabsvaluevertex(simplex))) <= config[:stopvalroot]
+    return true, :STOPVAL_ROOT_REACHED
+  elseif abs(value(maxabsvaluevertex(simplex))) >= config[:stopvalpole]
+    return true, :STOPVAL_POLE_REACHED
+  end
+
+  toprocess = Set{Int}(1)
+  processed = Set{Int}()
+  @inbounds while !isempty(toprocess)
+    vi = pop!(toprocess)
     v = getvertex(simplex, vi)
+    connectedto = Set{Int}()
+    for (qi, q) ∈ enumerate(simplex)
+      thisxtol = true
+      for (i, (pv, pq)) ∈ enumerate(zip(position(v), position(q)))
+        thisxtol &= isapprox(pv, pq, rtol=config[:xtol_rel][i],
+                                     atol=config[:xtol_abs][i])
+      end
+      thisxtol && push!(connectedto, qi)
+      thisxtol && for i in connectedto if i ∉ processed push!(toprocess, i) end end
+    end
+    push!(processed, vi)
+  end
+  allxtol = all(i ∈ processed for i ∈ 1:length(simplex))
+  allxtol && return true, :XTOL_REACHED
+
+  allftol = true
+  @inbounds for (vi, v) ∈ enumerate(simplex)
     for qi ∈ vi+1:length(simplex)
       q = getvertex(simplex, qi)
-      for (i, (pv, pq)) ∈ enumerate(zip(position(v), position(q)))
-        allxtol &= all(isapprox.(pv, pq, rtol=xtol_rel[i], atol=xtol_abs[i]))
-      end
-      allftol &= all(isapprox(value(v), value(q), rtol=ftol_rel, atol=0))
+      allftol &= all(isapprox(value(v), value(q), rtol=config[:ftol_rel], atol=0))
     end
   end
-  allxtol && return true, :XTOL_REACHED
   allftol && return true, :FTOL_REACHED
+
   return false, :CONTINUE
 end
 
@@ -82,8 +106,8 @@ function _πtoπ(ϕ)
   ϕ > π && return _πtoπ(ϕ - 2π)
   return ϕ
 end
-angle(a) = atan(imag(a), real(a))
-angle(a, b) = _πtoπ(angle(b) - angle(a))
+import Base.angle
+angle(a::T, b::T) where {T<:Complex} = _πtoπ(angle(b) - angle(a))
 
 function windingangle(s::Simplex)
   return sum(angle.(value.(s.vertices), value.(circshift(s.vertices, -1))))

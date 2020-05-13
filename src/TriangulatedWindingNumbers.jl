@@ -8,16 +8,16 @@ function solve(f::T, lower::AbstractVector{U}, upper::AbstractVector{V},
                ) where {T<:Function, U<:Number, V<:Number}
   dim = length(lower)
   typeof(gridsize) <: Real && (gridsize = gridsize .* ones(Int, dim))
-  position(i) = (i .- 1) ./ (gridsize .- 1) .* (upper .- lower) .+ lower
+  index2position(i) = (i .- 1) ./ (gridsize .- 1) .* (upper .- lower) .+ lower
   index2values = Dict()
-  for ii ∈ CartesianIndices(Tuple(gridsize .* ones(Int, dim)))
+  totaltime = @elapsed for ii ∈ CartesianIndices(Tuple(gridsize .* ones(Int, dim)))
     index = collect(Tuple(ii))
-    x = position(index)
+    x = index2position(index)
     index2values[index] = f(x)
   end
-  simplices = Set{Simplex}()
   VT1 = promote_type(U, V)
   VT2 = typeof(first(index2values)[2])
+  simplices = Set{Simplex{VT1, VT2}}()
   function generatesimplices!(simplices, direction)
     for ii ∈ CartesianIndices(Tuple((gridsize .* ones(Int, dim))))
       vertices = Vector{Vertex{VT1, VT2}}()
@@ -25,49 +25,60 @@ function solve(f::T, lower::AbstractVector{U}, upper::AbstractVector{V},
       for i ∈ 1:dim + 1
         vertexindex = [index[j] + ((j == i) ? direction : 0) for j ∈ 1:dim]
         all(1 .<= vertexindex .<= gridsize) || continue
-        vertex = Vertex{VT1, VT2}(position(vertexindex), index2values[vertexindex])
+        vertex = Vertex{VT1, VT2}(index2position(vertexindex),
+                                  index2values[vertexindex])
         push!(vertices, vertex)
       end
       length(vertices) != dim + 1 && continue
-      push!(simplices, Simplex(vertices))
+      push!(simplices, Simplex{VT1, VT2}(vertices))
     end
   end
-  totaltime = @elapsed generatesimplices!(simplices, 1)
+  totaltime += @elapsed generatesimplices!(simplices, 1)
   totaltime += @elapsed generatesimplices!(simplices, -1)
   @assert length(simplices) == 2 * prod((gridsize .- 1))
-
   return _solve(f, collect(simplices), totaltime; kwargs...)
 end
 
-function _solve(f::T, simplices::Vector{Simplex}, totaltime=0.0;
-    kwargs...) where {T<:Function}
+function convergenceconfig(dim::Int, T::Type; kwargs...)
   kwargs = Dict(kwargs)
   timelimit = get(kwargs, :timelimit, Inf)
-  xtol_abs = get(kwargs, :xtol_abs, eps()) .* ones(Int, dimensionality(first(simplices)))
-  xtol_rel = get(kwargs, :xtol_rel, zeros(size(xtol_abs)))
+  xtol_abs = get(kwargs, :xtol_abs, zeros(T)) .* ones(Bool, dim)
+  xtol_rel = get(kwargs, :xtol_rel, eps(T)) .* ones(Bool, dim)
   ftol_rel = get(kwargs, :ftol_rel, eps())
-  stopval = get(kwargs, :stopval, 0.0)
+  stopvalroot = get(kwargs, :stopvalroot, eps()) # zero makes it go haywire
+  stopvalpole = get(kwargs, :stopvalpole, Inf)
+  any(iszero.(xtol_rel) .& iszero.(xtol_abs)) && error("xtol_rel .& xtol_abs
+                                                       must not contain zeros")
+  return (timelimit=timelimit, xtol_abs=xtol_abs, xtol_rel=xtol_rel,
+          ftol_rel=ftol_rel, stopvalroot=stopvalroot, stopvalpole=stopvalpole)
+end
+
+function _solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
+    kwargs...) where {F<:Function, T<:Number, U<:Complex}
+
+  config = convergenceconfig(dimensionality(first(simplices)), T; kwargs...)
 
   solutions = Vector{Tuple{eltype(simplices), Symbol}}()
-  while !isempty(simplices) && totaltime < timelimit
+  while totaltime < config[:timelimit]
     newsimplices = Vector{eltype(simplices)}()
     for (i, simplex) ∈ enumerate(simplices)
-      windings = windingnumber(simplex)
-      windings == 0 && continue
+      windingnumber(simplex) == 0 && continue
       innermost = closestomiddlevertex(simplex)
-      Δt = @elapsed centroid = centroidignorevertex(f, simplex, innermost)
+      Δt = @elapsed centroidvertex = centroidignorevertex(f, simplex, innermost)
       for vertex ∈ simplex
         areidentical(vertex, innermost) && continue
         newsimplex = deepcopy(simplex)
-        swap!(newsimplex, vertex, centroid)
-        isconverged, returncode = assessconvergence(newsimplex, xtol_abs,
-          xtol_rel, ftol_rel, stopval)
+        swap!(newsimplex, vertex, centroidvertex)
+        all(areidentical.(newsimplex, simplex)) && continue
+        windingnumber(newsimplex) == 0 && continue
+        isconverged, returncode = assessconvergence(newsimplex, config)
         isconverged && push!(solutions, (newsimplex, returncode))
         isconverged || push!(newsimplices, newsimplex)
-        (totaltime += Δt) > timelimit && break
       end
+      (totaltime += Δt) > config[:timelimit] && break
     end
     simplices = newsimplices
+    isempty(simplices) && break
   end # while
   return solutions
 end # solve
