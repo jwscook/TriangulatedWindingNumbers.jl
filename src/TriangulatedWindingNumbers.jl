@@ -59,21 +59,17 @@ function _solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
   config = convergenceconfig(dimensionality(first(simplices)), T; kwargs...)
 
   solutions = Vector{Tuple{eltype(simplices), Symbol}}()
-#  iterations = 0
   while totaltime < config[:timelimit]
     newsimplices = Vector{eltype(simplices)}()
     for (i, simplex) ∈ enumerate(simplices)
       windingnumber(simplex) == 0 && continue
       innermost = closestomiddlevertex(simplex)
       Δt = @elapsed centroidvertex = centroidignorevertex(f, simplex, innermost)
-#      @show abs(value(maxabsvaluevertex(simplex))); for v ∈ simplex; @show v; end
       for vertex ∈ simplex
         areidentical(vertex, innermost) && continue
         newsimplex = deepcopy(simplex)
         swap!(newsimplex, vertex, centroidvertex)
         all(areidentical.(newsimplex, simplex)) && continue
-#        iterations += 1
-#        @show abs(value(maxabsvaluevertex(newsimplex))); for v ∈ newsimplex; @show v; end
         windingnumber(newsimplex) == 0 && continue
         isconverged, returncode = assessconvergence(newsimplex, config)
         isconverged && push!(solutions, (newsimplex, returncode))
