@@ -27,6 +27,8 @@ issortedbyangle(s::Simplex) = issorted(s, by=v->angle(value(v)))
 
 dimensionality(s::Simplex) = length(s) - 1
 
+areidentical(a::Simplex, b::Simplex) = all(areidentical.(a, b))
+
 function getvertex(s::Simplex, i::Int)
   @assert 1 <= i <= length(s)
   @assert issortedbyangle(s)

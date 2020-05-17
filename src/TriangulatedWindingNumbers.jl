@@ -3,40 +3,50 @@ module TriangulatedWindingNumbers
 include("Vertexes.jl")
 include("Simplexes.jl")
 
-function solve(f::T, lower::AbstractVector{U}, upper::AbstractVector{V},
-               gridsize::Union{Int, Vector{Int}}; kwargs...
-               ) where {T<:Function, U<:Number, V<:Number}
+function solve(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
+    gridsizeint::U; kwargs...) where {F<:Function, T<:Number, U<:Integer}
+  gridsize = gridsizeint .* ones(typeof(gridsizeint), length(lower))
+  return solve(f, lower, upper, gridsize;  kwargs...)
+end
+
+function generatesimplices(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
+    gridsize::AbstractVector{<:Integer}) where {F<:Function, T<:Number}
+  @assert length(lower) == length(upper) == length(gridsize)
   dim = length(lower)
-  typeof(gridsize) <: Real && (gridsize = gridsize .* ones(Int, dim))
   index2position(i) = (i .- 1) ./ (gridsize .- 1) .* (upper .- lower) .+ lower
   index2values = Dict()
-  totaltime = @elapsed for ii ∈ CartesianIndices(Tuple(gridsize .* ones(Int, dim)))
+  totaltime = @elapsed for ii ∈ CartesianIndices(Tuple(gridsize))
     index = collect(Tuple(ii))
     x = index2position(index)
     index2values[index] = f(x)
   end
-  VT1 = promote_type(U, V)
-  VT2 = typeof(first(index2values)[2])
-  simplices = Set{Simplex{VT1, VT2}}()
+  U = typeof(first(index2values)[2])
+  simplices = Set{Simplex{T, U}}()
   function generatesimplices!(simplices, direction)
     for ii ∈ CartesianIndices(Tuple((gridsize .* ones(Int, dim))))
-      vertices = Vector{Vertex{VT1, VT2}}()
+      vertices = Vector{Vertex{T, U}}()
       index = collect(Tuple(ii))
       for i ∈ 1:dim + 1
         vertexindex = [index[j] + ((j == i) ? direction : 0) for j ∈ 1:dim]
         all(1 .<= vertexindex .<= gridsize) || continue
-        vertex = Vertex{VT1, VT2}(index2position(vertexindex),
-                                  index2values[vertexindex])
+        vertex = Vertex{T, U}(index2position(vertexindex),
+                              index2values[vertexindex])
         push!(vertices, vertex)
       end
       length(vertices) != dim + 1 && continue
-      push!(simplices, Simplex{VT1, VT2}(vertices))
+      push!(simplices, Simplex{T, U}(vertices))
     end
   end
   totaltime += @elapsed generatesimplices!(simplices, 1)
   totaltime += @elapsed generatesimplices!(simplices, -1)
   @assert length(simplices) == 2 * prod((gridsize .- 1))
-  return _solve(f, collect(simplices), totaltime; kwargs...)
+  return (simplices, totaltime)
+end
+
+function solve(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
+    gridsize::AbstractVector{<:Integer}; kwargs...) where {F<:Function, T<:Number}
+  simplices, totaltime = generatesimplices(f, lower, upper, gridsize)
+  return solve(f, collect(simplices), totaltime; kwargs...)
 end
 
 function convergenceconfig(dim::Int, T::Type; kwargs...)
@@ -53,7 +63,7 @@ function convergenceconfig(dim::Int, T::Type; kwargs...)
           ftol_rel=ftol_rel, stopvalroot=stopvalroot, stopvalpole=stopvalpole)
 end
 
-function _solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
+function solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
     kwargs...) where {F<:Function, T<:Number, U<:Complex}
 
   config = convergenceconfig(dimensionality(first(simplices)), T; kwargs...)
@@ -69,7 +79,7 @@ function _solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
         areidentical(vertex, innermost) && continue
         newsimplex = deepcopy(simplex)
         swap!(newsimplex, vertex, centroidvertex)
-        all(areidentical.(newsimplex, simplex)) && continue
+        areidentical(newsimplex, simplex) && continue
         windingnumber(newsimplex) == 0 && continue
         isconverged, returncode = assessconvergence(newsimplex, config)
         isconverged && push!(solutions, (newsimplex, returncode))
