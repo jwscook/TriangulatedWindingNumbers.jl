@@ -57,22 +57,30 @@ function convergenceconfig(dim::Int, T::Type; kwargs...)
   ftol_rel = get(kwargs, :ftol_rel, eps())
   stopvalroot = get(kwargs, :stopvalroot, eps()) # zero makes it go haywire
   stopvalpole = get(kwargs, :stopvalpole, Inf)
+  solutiontype = get(kwargs, :solutiontype, :rootsandpoles)
   any(iszero.(xtol_rel) .& iszero.(xtol_abs)) && error("xtol_rel .& xtol_abs
                                                        must not contain zeros")
   return (timelimit=timelimit, xtol_abs=xtol_abs, xtol_rel=xtol_rel,
-          ftol_rel=ftol_rel, stopvalroot=stopvalroot, stopvalpole=stopvalpole)
+          ftol_rel=ftol_rel, stopvalroot=stopvalroot, stopvalpole=stopvalpole,
+          solutiontype=solutiontype)
 end
 
 function solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
     kwargs...) where {F<:Function, T<:Number, U<:Complex}
 
   config = convergenceconfig(dimensionality(first(simplices)), T; kwargs...)
+  function solutionselector(solutiontype)
+    solutiontype == :rootsandpoles && return s->windingnumber(s) == 0 
+    solutiontype == :roots && return s -> windingnumber(s) <= 0
+    solutiontype == :poles && return s -> windingnumber(s) >= 0
+  end
+  selector = solutionselector(config[:solutiontype])
 
   solutions = Vector{Tuple{eltype(simplices), Symbol}}()
   while totaltime < config[:timelimit]
     newsimplices = Vector{eltype(simplices)}()
     for (i, simplex) ∈ enumerate(simplices)
-      windingnumber(simplex) == 0 && continue
+      selector(simplex) && continue
       innermost = closestomiddlevertex(simplex)
       Δt = @elapsed centroidvertex = centroidignorevertex(f, simplex, innermost)
       for vertex ∈ simplex
@@ -80,7 +88,7 @@ function solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
         newsimplex = deepcopy(simplex)
         swap!(newsimplex, vertex, centroidvertex)
         areidentical(newsimplex, simplex) && continue
-        windingnumber(newsimplex) == 0 && continue
+        selector(newsimplex) && continue
         isconverged, returncode = assessconvergence(newsimplex, config)
         isconverged && push!(solutions, (newsimplex, returncode))
         isconverged || push!(newsimplices, newsimplex)
