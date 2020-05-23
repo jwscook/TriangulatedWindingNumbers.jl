@@ -11,7 +11,11 @@ end
 
 function generatesimplices(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
     gridsize::AbstractVector{<:Integer}) where {F<:Function, T<:Number}
-  @assert length(lower) == length(upper) == length(gridsize)
+  all(gridsize .> 1) || error("gridsize must .> 1")
+  if !(length(lower) == length(upper) == length(gridsize))
+    error("The lengths of lower, $lower, upper, $upper, and gridsize $gridsize
+          must be the same")
+  end
   dim = length(lower)
   index2position(i) = (i .- 1) ./ (gridsize .- 1) .* (upper .- lower) .+ lower
   index2values = Dict()
