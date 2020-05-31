@@ -186,7 +186,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
       end
     end
 
-    @testset "xtol_rel is eps and xtol_abs zero ftol_abs is eps" begin
+    @testset "xtol_rel is eps and xtol_abs zero stopvalroot is eps" begin
       for i in 1:10
         gridsize = [rand(1:10), rand(1:10)]
         function mock(x::Vector, root)
