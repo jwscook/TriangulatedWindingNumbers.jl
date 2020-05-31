@@ -98,7 +98,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
   @testset "End-to-end tests roots" begin
     @testset "Single root" begin
       for i in 1:10
-        gridsize = [rand(2:10), rand(2:10)]
+        gridsize = [rand(1:10), rand(1:10)]
         xtol_abs=10.0^(-rand(3:15))
         function mock(x::Vector, root)
           return (x[1] + im * x[2]) - root
@@ -119,7 +119,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
 
     @testset "Single pole" begin
       for i in 1:10
-        gridsize = [rand(2:10), rand(2:10)]
+        gridsize = [rand(1:10), rand(1:10)]
         xtol_abs=10.0^(-rand(3:15))
         function mock(x::Vector, root)
           return 1 / ((x[1] + im * x[2]) - root)
@@ -147,7 +147,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
         end
         lower = [0.0, 0.0]
         upper = [1.0, 1.0]
-        roots = [rand(ComplexF64) for i ∈ 1:rand(2:10)]
+        roots = [rand(ComplexF64) for i ∈ 1:rand(1:10)]
         objective(x) = multimock(x, roots)
         solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
           gridsize, xtol_abs=xtol_abs, stopvalroot=1e-20)
@@ -171,7 +171,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
         end
         lower = [0.0, 0.0]
         upper = [1.0, 1.0]
-        roots = [rand(ComplexF64) for i ∈ 1:rand(2:10)]
+        roots = [rand(ComplexF64) for i ∈ 1:rand(1:10)]
         objective(x) = multimock(x, roots)
         solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
           gridsize, xtol_abs=xtol_abs, stopvalpole=1e20)
@@ -188,7 +188,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
 
     @testset "xtol_rel is eps and xtol_abs zero ftol_abs is eps" begin
       for i in 1:10
-        gridsize = [rand(2:10), rand(2:10)]
+        gridsize = [rand(1:10), rand(1:10)]
         function mock(x::Vector, root)
           return (x[1] + im * x[2]) - root
         end

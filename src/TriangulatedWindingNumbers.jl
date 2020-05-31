@@ -11,15 +11,15 @@ end
 
 function generatesimplices(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
     gridsize::AbstractVector{<:Integer}) where {F<:Function, T<:Number}
-  all(gridsize .> 1) || error("gridsize must .> 1")
+  all(gridsize .> 0) || error("gridsize must .> 0")
   if !(length(lower) == length(upper) == length(gridsize))
     error("The lengths of lower, $lower, upper, $upper, and gridsize $gridsize
           must be the same")
   end
   dim = length(lower)
-  index2position(i) = (i .- 1) ./ (gridsize .- 1) .* (upper .- lower) .+ lower
+  index2position(i) = (i .- 1) ./ gridsize .* (upper .- lower) .+ lower
   index2values = Dict()
-  totaltime = @elapsed for ii ∈ CartesianIndices(Tuple(gridsize))
+  totaltime = @elapsed for ii ∈ CartesianIndices(Tuple(gridsize .+ 1))
     index = collect(Tuple(ii))
     x = index2position(index)
     index2values[index] = f(x)
@@ -27,12 +27,12 @@ function generatesimplices(f::F, lower::AbstractVector{T}, upper::AbstractVector
   U = typeof(first(index2values)[2])
   simplices = Set{Simplex{T, U}}()
   function generatesimplices!(simplices, direction)
-    for ii ∈ CartesianIndices(Tuple((gridsize .* ones(Int, dim))))
+    for ii ∈ CartesianIndices(Tuple(((gridsize .+ 1) .* ones(Int, dim))))
       vertices = Vector{Vertex{T, U}}()
       index = collect(Tuple(ii))
       for i ∈ 1:dim + 1
         vertexindex = [index[j] + ((j == i) ? direction : 0) for j ∈ 1:dim]
-        all(1 .<= vertexindex .<= gridsize) || continue
+        all(1 .<= vertexindex .<= gridsize .+ 1) || continue
         vertex = Vertex{T, U}(index2position(vertexindex),
                               index2values[vertexindex])
         push!(vertices, vertex)
@@ -43,7 +43,7 @@ function generatesimplices(f::F, lower::AbstractVector{T}, upper::AbstractVector
   end
   totaltime += @elapsed generatesimplices!(simplices, 1)
   totaltime += @elapsed generatesimplices!(simplices, -1)
-  @assert length(simplices) == 2 * prod((gridsize .- 1))
+  @assert length(simplices) == 2 * prod(gridsize)
   return (simplices, totaltime)
 end
 
