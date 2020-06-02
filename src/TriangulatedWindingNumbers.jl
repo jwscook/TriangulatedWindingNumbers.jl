@@ -64,25 +64,6 @@ end
 Find the roots and poles of function, `f`, in a hyper-rectangle from
 `lower` to `upper` with simplices generating in `gridsizeint`
 sub-hyper-rectangles, and options passed in via kwargs.
-
-Function `f` accepts an n-dimensional array as an argument and returns a complex
-number.
-
-# Keyword Arguments
--  stopval (default sqrt(eps())): stopping criterion when function evaluates
-equal to or less than stopval
--  xtol_abs (default zeros(T)) .* ones(Bool, dimensionality(s)): stop if
-the vertices of simplex get within this absolute tolerance
--  xtol_rel (default eps(T)) .* ones(Bool, dimensionality(s)): stop if
-the vertices of simplex get within this relative tolerance
--  ftol_abs (default 0): stop if function evaluations at the
-vertices are close to one another by this absolute tolerance
--  ftol_rel (default 1000eps(real(U))): stop if function evaluations at the
-vertices are close to one another by this relative tolerance
--  timelimit (default Inf): stop if it takes longer than this in seconds
--  stopvalroot (default nextfloat(0.0): stop if any value is less than or
-equal to this
--  stopvalpole (default Inf): stop if any value is greater than or equal to this
 """
 function solve(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
     gridsizeint::U; kwargs...) where {F<:Function, T<:Number, U<:Integer}
@@ -91,30 +72,11 @@ function solve(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
 end
 
 """
-    solve(f, lower, upper, gridsizeint; kwargs...)
+    solve(f, lower, upper, gridsize; kwargs...)
 
 Find the roots and poles of function, `f`, in a hyper-rectangle from
-`lower` to `upper` with simplices generating in `gridsizeint`
+`lower` to `upper` with simplices generating in `gridsize`
 sub-hyper-rectangles, and options passed in via kwargs.
-
-Function `f` accepts an n-dimensional array as an argument and returns a complex
-number.
-
-# Keyword Arguments
--  stopval (default sqrt(eps())): stopping criterion when function evaluates
-equal to or less than stopval
--  xtol_abs (default zeros(T)) .* ones(Bool, dimensionality(s)): stop if
-the vertices of simplex get within this absolute tolerance
--  xtol_rel (default eps(T)) .* ones(Bool, dimensionality(s)): stop if
-the vertices of simplex get within this relative tolerance
--  ftol_abs (default 0): stop if function evaluations at the
-vertices are close to one another by this absolute tolerance
--  ftol_rel (default 1000eps(real(U))): stop if function evaluations at the
-vertices are close to one another by this relative tolerance
--  timelimit (default Inf): stop if it takes longer than this in seconds
--  stopvalroot (default nextfloat(0.0): stop if any value is less than or
-equal to this
--  stopvalpole (default Inf): stop if any value is greater than or equal to this
 """
 function solve(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
     gridsize::AbstractVector{<:Integer}; kwargs...) where {F<:Function, T<:Number}
