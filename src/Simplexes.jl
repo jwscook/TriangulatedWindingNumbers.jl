@@ -99,7 +99,8 @@ function assessconvergence(simplex, config::NamedTuple)
   for (vi, v) ∈ enumerate(simplex)
     for qi ∈ vi+1:length(simplex)
       q = getvertex(simplex, qi)
-      allftol &= all(isapprox(value(v), value(q), rtol=config[:ftol_rel], atol=0))
+      allftol &= all(isapprox(value(v), value(q), rtol=config[:ftol_rel],
+                              atol=config[:ftol_abs]))
     end
   end
   allftol && return true, :FTOL_REACHED
