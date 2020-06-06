@@ -10,11 +10,9 @@ end
 import Base.length, Base.iterate, Base.push!, Base.iterate, Base.getindex
 import Base.eachindex, Base.sort!, Base.setindex!
 Base.length(s::Simplex) = length(s.vertices)
-Base.push!(s::Simplex, v::Vertex) = push!(s.vertices, v)
 Base.iterate(s::Simplex) = iterate(s.vertices)
 Base.iterate(s::Simplex, counter) = iterate(s.vertices, counter)
 Base.getindex(s::Simplex, index) = s.vertices[index]
-Base.eachindex(s::Simplex) = eachindex(s.vertices)
 Base.sort!(s::Simplex; kwargs...) = sort!(s.vertices; kwargs...)
 function Base.setindex!(s::Simplex, entry, index)
   s.vertices[index] = entry
