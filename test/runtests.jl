@@ -136,6 +136,24 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
           @test isapprox(centroid(s)[2], imag(root), atol=xtol_abs)
         end
       end
+      for i in 1:10
+        gridsize = [rand(1:10), rand(1:10)]
+        function mock(x::Vector, root)
+          return 1 / ((x[1] + im * x[2]) - root)
+        end
+        root = rand(ComplexF64)
+        objective(x) = mock(x, root)
+        lower = collect(reim(root)) .- rand(2)
+        upper = collect(reim(root)) .+ rand(2)
+        solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
+          gridsize, stopvalpole=1e15)
+        @test length(solutions) == 1
+        for (s, reason) ∈ solutions
+          @test isapprox(centroid(s)[1], real(root))
+          @test isapprox(centroid(s)[2], imag(root))
+        end
+      end
+
     end
 
     @testset "Multiple roots" begin
@@ -207,6 +225,27 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
           @test isapprox(centroid(s)[1], real(root), atol=0, rtol=eps())
           @test isapprox(centroid(s)[2], imag(root), atol=0, rtol=eps())
         end
+      end
+    end
+
+  end
+
+  @testset "test other API" begin
+    for i in 1:1
+      xtol_abs=10.0^(-rand(3:15))
+      function mock(x::Vector, root)
+        return 1 / ((x[1] + im * x[2]) - root)
+      end
+      root = rand(ComplexF64)
+      objective(x) = mock(x, root)
+      lower = collect(reim(root)) .- rand(2)
+      upper = collect(reim(root)) .+ rand(2)
+      solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
+        1, xtol_abs=xtol_abs)
+      @test length(solutions) == 1
+      for (s, reason) ∈ solutions
+        @test isapprox(centroid(s)[1], real(root), atol=xtol_abs)
+        @test isapprox(centroid(s)[2], imag(root), atol=xtol_abs)
       end
     end
 
