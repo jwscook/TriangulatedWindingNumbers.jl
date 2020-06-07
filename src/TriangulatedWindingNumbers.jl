@@ -5,10 +5,13 @@ include("Simplexes.jl")
 
 function generatesimplices(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
     gridsize::AbstractVector{<:Integer}) where {F<:Function, T<:Number}
-  all(gridsize .> 0) || error("gridsize must .> 0")
+  all(gridsize .> 0) || throw(ArgumentError("gridsize must .> 0"))
   if !(length(lower) == length(upper) == length(gridsize))
-    error("The lengths of lower, $lower, upper, $upper, and gridsize $gridsize
-          must be the same")
+    throw(ArgumentError("The lengths of lower, $lower, upper, $upper, and gridsize
+                        $gridsize must be the same"))
+  end
+  if !(all(lower .< upper))
+    throw(ArgumentError("lower, $lower must .< upper, $upper"))
   end
   dim = length(lower)
   index2position(i) = (i .- 1) ./ gridsize .* (upper .- lower) .+ lower
@@ -50,8 +53,9 @@ function convergenceconfig(dim::Int, T::Type; kwargs...)
   ftol_rel = get(kwargs, :ftol_rel, eps())
   stopvalroot = get(kwargs, :stopvalroot, nextfloat(0.0)) # zero makes it go haywire
   stopvalpole = get(kwargs, :stopvalpole, Inf)
-  any(iszero.(xtol_rel) .& iszero.(xtol_abs)) && error("xtol_rel .& xtol_abs
-                                                       must not contain zeros")
+  if any(iszero.(xtol_rel) .& iszero.(xtol_abs))
+    throw(ArgumentError("xtol_rel .& xtol_abs must not contain zeros"))
+  end
   return (timelimit=timelimit, xtol_abs=xtol_abs, xtol_rel=xtol_rel,
           ftol_abs=ftol_abs, ftol_rel=ftol_rel, 
           stopvalroot=stopvalroot, stopvalpole=stopvalpole)

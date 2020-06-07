@@ -113,11 +113,10 @@ function _πtoπ(ϕ)
   ϕ > π && return _πtoπ(ϕ - 2π)
   return ϕ
 end
-import Base.angle
-angle(a::T, b::T) where {T<:Complex} = _πtoπ(angle(b) - angle(a))
 
 function windingangle(s::Simplex)
-  return sum(angle.(value.(s.vertices), value.(circshift(s.vertices, -1))))
+  return sum(_πtoπ.(angle.(value.(circshift(s.vertices, -1))) .-
+                    angle.(value.(s.vertices))))
 end
 
 function windingnumber(s::Simplex)

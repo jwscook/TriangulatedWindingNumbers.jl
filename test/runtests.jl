@@ -212,5 +212,16 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
 
   end
 
+  @testset "check errors are caught" begin
+    @test_throws ArgumentError TriangulatedWindingNumbers.solve(x->im, [0.0], [1.0],
+                                                                [1, 2])
+    @test_throws ArgumentError TriangulatedWindingNumbers.solve(x->im, [0.0], [1.0],
+                                                                [0])
+    @test_throws ArgumentError TriangulatedWindingNumbers.solve(x->im, [0.0], [0.0],
+                                                                [1])
+    @test_throws ArgumentError TriangulatedWindingNumbers.solve(x->im, [0.0, 0.0],
+      [1.0, 1.0], [2, 2], xtol_abs=0.0, xtol_rel=0.0)
+  end
+
 end
 
