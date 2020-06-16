@@ -38,6 +38,7 @@ function generatesimplices(f::F, lower::AbstractVector{T}, upper::AbstractVector
       push!(simplices, Simplex{T, U}(vertices))
     end
   end
+
   totaltime += @elapsed generatesimplices!(simplices, 1)
   totaltime += @elapsed generatesimplices!(simplices, -1)
   @assert length(simplices) == 2 * prod(gridsize)
@@ -127,10 +128,10 @@ function solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
       innermost = closestomiddlevertex(simplex)
       Δt = @elapsed centroidvertex = centroidignorevertex(f, simplex, innermost)
       for vertex ∈ simplex
-        areidentical(vertex, innermost) && continue
+        isequal(vertex, innermost) && continue
         newsimplex = deepcopy(simplex)
         swap!(newsimplex, vertex, centroidvertex)
-        areidentical(newsimplex, simplex) && continue
+        isequal(newsimplex, simplex) && continue
         windingnumber(newsimplex) == 0 && continue
         isconverged, returncode = assessconvergence(newsimplex, config)
         isconverged && push!(solutions, (newsimplex, returncode))

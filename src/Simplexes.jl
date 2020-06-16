@@ -7,8 +7,8 @@ struct Simplex{T<:Number, U<:Complex}
   end
 end
 
-import Base.length, Base.iterate, Base.push!, Base.iterate, Base.getindex
-import Base.eachindex, Base.sort!, Base.setindex!
+import Base: length, iterate, push!, iterate, getindex
+import Base: eachindex, sort!, setindex!, hash, isequal
 Base.length(s::Simplex) = length(s.vertices)
 Base.iterate(s::Simplex) = iterate(s.vertices)
 Base.iterate(s::Simplex, counter) = iterate(s.vertices, counter)
@@ -19,13 +19,15 @@ function Base.setindex!(s::Simplex, entry, index)
   sortbyangle!(s)
   return nothing
 end
+Base.hash(s::Simplex) = hash(s, hash(:Simplex))
+Base.hash(s::Simplex, h::UInt64) = hash(hash.(s), h)
+Base.isequal(a::Simplex, b::Simplex) = all(isequal.(a, b))
 
 sortbyangle!(s::Simplex) = sort!(s, by=v->angle(value(v)))
 issortedbyangle(s::Simplex) = issorted(s, by=v->angle(value(v)))
 
 dimensionality(s::Simplex) = length(s) - 1
 
-areidentical(a::Simplex, b::Simplex) = all(areidentical.(a, b))
 
 function getvertex(s::Simplex, i::Int)
   @assert 1 <= i <= length(s)
@@ -43,7 +45,7 @@ maxabsvaluevertex(s::Simplex) = findabsvaluevertex(s, findmax)
 
 function centroidignorevertex(f::T, s::Simplex, vertextoignore::Vertex
     ) where {T<:Function, U<:Function}
-  g(v) = areidentical(v, vertextoignore) ? zero(position(v)) : position(v)
+  g(v) = isequal(v, vertextoignore) ? zero(position(v)) : position(v)
   x = mapreduce(g, +, s) ./ (length(s) - 1)
   return Vertex(x, f(x))
 end
@@ -56,11 +58,7 @@ function closestomiddlevertex(s::Simplex)
 end
 
 function swap!(s::Simplex, this::Vertex, forthat::Vertex)
-  index = 0
-  for (i,v) ∈ enumerate(s)
-    areidentical(v, this) && (index = i; break)
-  end
-  @assert index != 0
+  index = findfirst(x->isequal(x, this), s.vertices)
   s[index] = forthat
   @assert issortedbyangle(s)
   return nothing
