@@ -1,10 +1,12 @@
 module TriangulatedWindingNumbers
 
+const Container{T} = Union{AbstractVector{T}, NTuple{N, T}} where N
+
 include("Vertexes.jl")
 include("Simplexes.jl")
 
-function generatesimplices(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
-    gridsize::AbstractVector{<:Integer}) where {F<:Function, T<:Number}
+function generatesimplices(f::F, lower::Container{T}, upper::Container{T},
+    gridsize::Container{<:Integer}) where {F<:Function, T<:Number}
   all(gridsize .> 0) || throw(ArgumentError("gridsize must .> 0"))
   if !(length(lower) == length(upper) == length(gridsize))
     throw(ArgumentError("The lengths of lower, $lower, upper, $upper, and gridsize
@@ -70,7 +72,7 @@ Find the roots and poles of function, `f`, in a hyper-rectangle from
 `lower` to `upper` with simplices generating in `gridsizeint`
 sub-hyper-rectangles, and options passed in via kwargs.
 """
-function solve(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
+function solve(f::F, lower::Container{T}, upper::Container{T},
     gridsizeint::U; kwargs...) where {F<:Function, T<:Number, U<:Integer}
   gridsize = gridsizeint .* ones(typeof(gridsizeint), length(lower))
   return solve(f, lower, upper, gridsize;  kwargs...)
@@ -83,8 +85,8 @@ Find the roots and poles of function, `f`, in a hyper-rectangle from
 `lower` to `upper` with simplices generating in `gridsize`
 sub-hyper-rectangles, and options passed in via kwargs.
 """
-function solve(f::F, lower::AbstractVector{T}, upper::AbstractVector{T},
-    gridsize::AbstractVector{<:Integer}; kwargs...) where {F<:Function, T<:Number}
+function solve(f::F, lower::Container{T}, upper::Container{T},
+    gridsize::Container{<:Integer}; kwargs...) where {F<:Function, T<:Number}
   simplices, totaltime = generatesimplices(f, lower, upper, gridsize)
   return solve(f, collect(simplices), totaltime; kwargs...)
 end
@@ -115,7 +117,7 @@ vertices are close to one another by this relative tolerance
 equal to this
 -  stopvalpole (default Inf): stop if any value is greater than or equal to this
 """
-function solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
+function solve(f::F, simplices::Container{Simplex{T, U}}, totaltime=0.0;
     kwargs...) where {F<:Function, T<:Number, U<:Complex}
 
   config = convergenceconfig(dimensionality(first(simplices)), T; kwargs...)
@@ -129,13 +131,14 @@ function solve(f::F, simplices::AbstractVector{Simplex{T, U}}, totaltime=0.0;
       Δt = @elapsed centroidvertex = centroidignorevertex(f, simplex, innermost)
       for vertex ∈ simplex
         isequal(vertex, innermost) && continue
-        newsimplex = deepcopy(simplex)
-        swap!(newsimplex, vertex, centroidvertex)
-        isequal(newsimplex, simplex) && continue
-        windingnumber(newsimplex) == 0 && continue
-        isconverged, returncode = assessconvergence(newsimplex, config)
-        isconverged && push!(solutions, (newsimplex, returncode))
-        isconverged || push!(newsimplices, newsimplex)
+        swap!(simplex, vertex, centroidvertex)
+        if windingnumber(simplex) != 0
+          isconverged, returncode = assessconvergence(simplex, config)
+          newsimplex = deepcopy(simplex)
+          isconverged && push!(solutions, (newsimplex, returncode))
+          isconverged || push!(newsimplices, newsimplex)
+        end
+        swap!(simplex, centroidvertex, vertex) # swap back
       end
       (totaltime += Δt) > config[:timelimit] && break
     end

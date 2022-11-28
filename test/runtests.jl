@@ -4,6 +4,8 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
 
 @testset "TriangulatedWindingNumbers tests" begin
 
+  ntests = 5
+
   Random.seed!(0)
 
   @testset "Simplex tests" begin
@@ -97,7 +99,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
 
   @testset "End-to-end tests roots" begin
     @testset "Single root" begin
-      for i in 1:10
+      for i in 1:ntests
         gridsize = [rand(1:10), rand(1:10)]
         xtol_abs=10.0^(-rand(3:15))
         function mock(x::Vector, root)
@@ -118,7 +120,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
     end
 
     @testset "Single pole" begin
-      for i in 1:10
+      for i in 1:ntests
         gridsize = [rand(1:10), rand(1:10)]
         xtol_abs=10.0^(-rand(3:15))
         function mock(x::Vector, root)
@@ -136,7 +138,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
           @test isapprox(centroid(s)[2], imag(root), atol=xtol_abs)
         end
       end
-      for i in 1:10
+      for i in 1:ntests
         gridsize = [rand(1:10), rand(1:10)]
         function mock(x::Vector, root)
           return 1 / ((x[1] + im * x[2]) - root)
@@ -157,7 +159,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
     end
 
     @testset "Multiple roots" begin
-      for i in 1:100
+      for i in 1:ntests
         gridsize = [rand(5:20), rand(5:20)]
         xtol_abs=10.0^(-rand(3:15))
         function multimock(x::Vector, roots)
@@ -181,7 +183,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
     end
 
     @testset "Multiple poles" begin
-      for i in 1:100
+      for i in 1:ntests
         gridsize = [rand(5:20), rand(5:20)]
         xtol_abs=10.0^(-rand(3:15))
         function multimock(x::Vector, roots)
@@ -205,7 +207,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
     end
 
     @testset "xtol_rel is eps and xtol_abs zero stopvalroot is eps" begin
-      for i in 1:10
+      for i in 1:ntests
         gridsize = [rand(1:10), rand(1:10)]
         function mock(x::Vector, root)
           return (x[1] + im * x[2]) - root

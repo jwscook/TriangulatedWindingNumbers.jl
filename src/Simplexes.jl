@@ -44,7 +44,7 @@ minabsvaluevertex(s::Simplex) = findabsvaluevertex(s, findmin)
 maxabsvaluevertex(s::Simplex) = findabsvaluevertex(s, findmax)
 
 function centroidignorevertex(f::T, s::Simplex, vertextoignore::Vertex
-    ) where {T<:Function, U<:Function}
+    ) where {T<:Function}
   g(v) = isequal(v, vertextoignore) ? zero(position(v)) : position(v)
   x = mapreduce(g, +, s) ./ (length(s) - 1)
   return Vertex(x, f(x))
@@ -104,15 +104,18 @@ function assessconvergence(simplex, config::NamedTuple)
   return false, :CONTINUE
 end
 
-function _πtoπ(ϕ)
-  ϕ < -π && return _πtoπ(ϕ + 2π)
-  ϕ > π && return _πtoπ(ϕ - 2π)
+function _πtoπ(ϕ::T) where {T}
+  ϕ <= -T(π) && return _πtoπ(ϕ + 2π)
+  ϕ > T(π) && return _πtoπ(ϕ - 2π)
   return ϕ
 end
 
-function windingangle(s::Simplex)
-  return sum(_πtoπ.(angle.(value.(circshift(s.vertices, -1))) .-
-                    angle.(value.(s.vertices))))
+function windingangle(s::Simplex{T,U}) where {T,U}
+  θ = zero(real(U))
+  @inbounds for i in 1:length(s)
+    θ += _πtoπ(angle(value(s[mod1(i+1, length(s))])) - angle(value(s[i])))
+  end
+  return θ
 end
 
 function windingnumber(s::Simplex)
