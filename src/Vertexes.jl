@@ -1,6 +1,6 @@
-struct Vertex{T<:Number, U<:Complex}
-  position::AbstractVector{T}
-  value::U
+struct Vertex{T<:Complex, V<:AbstractVector{<:Number}}
+  position::V
+  value::T
 end
 value(v::Vertex) = v.value
 position(v::Vertex) = v.position

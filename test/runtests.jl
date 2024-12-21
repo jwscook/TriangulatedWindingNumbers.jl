@@ -15,7 +15,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
       v1 = Vertex(irrelevant, 1.0 - im)
       v2 = Vertex(irrelevant, 0.0 + im)
       v3 = Vertex(irrelevant, -1.0 - im)
-      encloseszero = Simplex{Float64, ComplexF64}([v1, v2, v3])
+      encloseszero = Simplex([v1, v2, v3])
       @test isapprox(1, abs(windingangle(encloseszero)) / (2π))
       @test windingnumber(encloseszero) == 1
     end
@@ -24,19 +24,19 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
       v1 = Vertex(irrelevant, 1.0 + im)
       v2 = Vertex(irrelevant, 2.0 + im)
       v3 = Vertex(irrelevant, 1.0 + im * 2)
-      doesntenclosezero = Simplex{Float64, ComplexF64}([v1, v2, v3])
+      doesntenclosezero = Simplex([v1, v2, v3])
       @test abs(windingangle(doesntenclosezero)) / (2π) < 1.0e-3
       @test windingnumber(doesntenclosezero) == 0
       v1 = Vertex(irrelevant, 1.0 + im)
       v2 = Vertex(irrelevant, 0.0 + 2*im)
       v3 = Vertex(irrelevant, -1.0 + im)
-      doesntenclosezero = Simplex{Float64, ComplexF64}([v1, v2, v3])
+      doesntenclosezero = Simplex([v1, v2, v3])
       @test abs(windingangle(doesntenclosezero)) / (2π) < 1.0e-3
       @test windingnumber(doesntenclosezero) == 0
       v1 = Vertex(irrelevant, 1.0 + 0im)
       v2 = Vertex(irrelevant, 0.0 + im)
       v3 = Vertex(irrelevant, 1.0 + 0im)
-      doesntenclosezero = Simplex{Float64, ComplexF64}([v1, v2, v3])
+      doesntenclosezero = Simplex([v1, v2, v3])
       @test abs(windingangle(doesntenclosezero)) / (2π) < 1.0e-3
       @test windingnumber(doesntenclosezero) == 0
     end
@@ -50,7 +50,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
       v1 = Vertex(pos, val)
       v2 = Vertex(pos, val)
       v3 = Vertex(pos, val)
-      s = Simplex{T,U}([v1, v2, v3])
+      s = Simplex([v1, v2, v3])
 
       defaults = TriangulatedWindingNumbers.convergenceconfig(dim, T)
       isconverged, returncode = assessconvergence(s, defaults)
@@ -65,7 +65,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
       v1 = Vertex([one(T), one(T)], rand(U))
       v2 = Vertex([one(T), one(T) + eps(T)], rand(U))
       v3 = Vertex([one(T) + eps(T), one(T)], rand(U))
-      s = Simplex{T,U}([v1, v2, v3])
+      s = Simplex([v1, v2, v3])
       defaults = TriangulatedWindingNumbers.convergenceconfig(dim, T)
       isconverged, returncode = assessconvergence(s, defaults)
       @test isconverged
@@ -79,7 +79,7 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
       v1 = Vertex([one(T), one(T)], rand(U))
       v2 = Vertex([one(T), one(T) + eps(T)], rand(U))
       v3 = Vertex([one(T), one(T) + eps(T) + eps(T)], rand(U))
-      s = Simplex{T,U}([v1, v2, v3])
+      s = Simplex([v1, v2, v3])
       defaults = TriangulatedWindingNumbers.convergenceconfig(dim, T)
       isconverged, returncode = assessconvergence(s, defaults)
       @assert all(isapprox(position(v1)[d], position(v2)[d],

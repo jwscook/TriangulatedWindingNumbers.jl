@@ -1,9 +1,9 @@
-struct Simplex{T<:Number, U<:Complex}
-  vertices::AbstractVector{Vertex{T,U}}
-  function Simplex{T,U}(vertices::AbstractVector{Vertex{T,U}}
-      ) where {T<:Number, U<:Complex}
+struct Simplex{T<:Complex, V<:AbstractVector{<:Vertex}}
+  vertices::V
+  function Simplex(vertices::AbstractVector{Vertex{T,U}}
+      ) where {T<:Complex, U}
     sort!(vertices, by=v->angle(value(v)))
-    return new{T,U}(vertices)
+    return new{T,typeof(vertices)}(vertices)
   end
 end
 
@@ -110,8 +110,8 @@ function _πtoπ(ϕ::T) where {T}
   return ϕ
 end
 
-function windingangle(s::Simplex{T,U}) where {T,U}
-  θ = zero(real(U))
+function windingangle(s::Simplex{T}) where {T}
+  θ = zero(real(T))
   @inbounds for i in 1:length(s)
     θ += _πtoπ(angle(value(s[mod1(i+1, length(s))])) - angle(value(s[i])))
   end

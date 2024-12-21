@@ -5,8 +5,8 @@ const Container{T} = Union{AbstractVector{T}, NTuple{N, T}} where N
 include("Vertexes.jl")
 include("Simplexes.jl")
 
-function generatesimplices(f::F, lower::Container{T}, upper::Container{T},
-    gridsize::Container{<:Integer}) where {F<:Function, T<:Number}
+function generatesimplices(f::F, lower::Container{N}, upper::Container{N},
+    gridsize::Container{<:Integer}) where {F<:Function, N<:Number}
   all(gridsize .> 0) || throw(ArgumentError("gridsize must .> 0"))
   if !(length(lower) == length(upper) == length(gridsize))
     throw(ArgumentError("The lengths of lower, $lower, upper, $upper, and gridsize
@@ -23,21 +23,22 @@ function generatesimplices(f::F, lower::Container{T}, upper::Container{T},
     x = index2position(index)
     index2values[index] = f(x)
   end
-  U = typeof(first(index2values)[2])
-  simplices = Set{Simplex{T, U}}()
+  T = typeof(first(index2values)[2])
+  V = typeof(lower)
+  simplices = Set{Simplex{T, Vector{Vertex{T, V}}}}()
   function generatesimplices!(simplices, direction)
     for ii ∈ CartesianIndices(Tuple(((gridsize .+ 1) .* ones(Int, dim))))
-      vertices = Vector{Vertex{T, U}}()
+      vertices = Vector{Vertex{T, V}}()
       index = collect(Tuple(ii))
       for i ∈ 1:dim + 1
         vertexindex = [index[j] + ((j == i) ? direction : 0) for j ∈ 1:dim]
         all(1 .<= vertexindex .<= gridsize .+ 1) || continue
-        vertex = Vertex{T, U}(index2position(vertexindex),
+        vertex = Vertex{T, V}(index2position(vertexindex),
                               index2values[vertexindex])
         push!(vertices, vertex)
       end
       length(vertices) != dim + 1 && continue
-      push!(simplices, Simplex{T, U}(vertices))
+      push!(simplices, Simplex(vertices))
     end
   end
 
@@ -117,10 +118,11 @@ vertices are close to one another by this relative tolerance
 equal to this
 -  stopvalpole (default Inf): stop if any value is greater than or equal to this
 """
-function solve(f::F, simplices::Container{Simplex{T, U}}, totaltime=0.0;
-    kwargs...) where {F<:Function, T<:Number, U<:Complex}
+function solve(f::F, simplices::Container{Simplex{T, V}}, totaltime=0.0;
+    kwargs...) where {F<:Function, T<:Complex, V}
 
-  config = convergenceconfig(dimensionality(first(simplices)), T; kwargs...)
+  config = convergenceconfig(dimensionality(first(simplices)), float(real(T));
+                             kwargs...)
 
   solutions = Vector{Tuple{eltype(simplices), Symbol}}()
   while totaltime < config[:timelimit]
