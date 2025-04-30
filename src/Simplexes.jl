@@ -2,10 +2,12 @@ struct Simplex{T<:Complex, V<:AbstractVector{<:Vertex}}
   vertices::V
   function Simplex(vertices::AbstractVector{Vertex{T,U}}
       ) where {T<:Complex, U}
-    sort!(vertices, by=v->angle(value(v)))
+    sort!(vertices, by=v->sortby(v, centroid(vertices)))
     return new{T,typeof(vertices)}(vertices)
   end
 end
+
+sortby(v::Vertex, c) = atan(reverse(position(v) .- c)...)
 
 import Base: length, iterate, push!, iterate, getindex
 import Base: eachindex, sort!, setindex!, hash, isequal
@@ -13,25 +15,24 @@ Base.length(s::Simplex) = length(s.vertices)
 Base.iterate(s::Simplex) = iterate(s.vertices)
 Base.iterate(s::Simplex, counter) = iterate(s.vertices, counter)
 Base.getindex(s::Simplex, index) = s.vertices[index]
-Base.sort!(s::Simplex; kwargs...) = sort!(s.vertices; kwargs...)
 function Base.setindex!(s::Simplex, entry, index)
   s.vertices[index] = entry
-  sortbyangle!(s)
+  sortbyvertexangle!(s)
+  @assert verticesaresorted(s)
   return nothing
 end
 Base.hash(s::Simplex) = hash(s, hash(:Simplex))
 Base.hash(s::Simplex, h::UInt64) = hash(hash.(s), h)
 Base.isequal(a::Simplex, b::Simplex) = all(isequal.(a, b))
 
-sortbyangle!(s::Simplex) = sort!(s, by=v->angle(value(v)))
-issortedbyangle(s::Simplex) = issorted(s, by=v->angle(value(v)))
+sortbyvertexangle!(s::Simplex) = sort!(s.vertices, lt=(a, b)->sortby(a, centroid(s)) < sortby(b, centroid(s)))
+verticesaresorted(s::Simplex) = issorted(s.vertices, lt=(a, b)->sortby(b, centroid(s)) < sortby(b, centroid(s)))
 
 dimensionality(s::Simplex) = length(s) - 1
 
 
 function getvertex(s::Simplex, i::Int)
   @assert 1 <= i <= length(s)
-  @assert issortedbyangle(s)
   return s[i]
 end
 
@@ -50,7 +51,7 @@ function centroidignorevertex(f::T, s::Simplex, vertextoignore::Vertex
   return Vertex(x, f(x))
 end
 
-centroid(s::Simplex) = mapreduce(position, +, s) ./ length(s)
+centroid(s) = mapreduce(position, +, s) ./ length(s)
 function closestomiddlevertex(s::Simplex)
   mid = centroid(s)
   _, index = findmin(map(v->sum((position(v) - mid).^2), s))
@@ -60,7 +61,6 @@ end
 function swap!(s::Simplex, this::Vertex, forthat::Vertex)
   index = findfirst(x->isequal(x, this), s.vertices)
   s[index] = forthat
-  @assert issortedbyangle(s)
   return nothing
 end
 

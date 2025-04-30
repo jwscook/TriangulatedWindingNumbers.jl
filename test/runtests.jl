@@ -112,7 +112,8 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
         solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
           gridsize, xtol_abs=xtol_abs)
         @test length(solutions) == 1
-        for (s, reason) ∈ solutions
+        for (s, windingnum, reason) ∈ solutions
+          @test windingnum == 1
           @test isapprox(centroid(s)[1], real(root), atol=xtol_abs)
           @test isapprox(centroid(s)[2], imag(root), atol=xtol_abs)
         end
@@ -133,7 +134,8 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
         solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
           gridsize, xtol_abs=xtol_abs)
         @test length(solutions) == 1
-        for (s, reason) ∈ solutions
+        for (s, windingnum, reason) ∈ solutions
+          @test windingnum == -1
           @test isapprox(centroid(s)[1], real(root), atol=xtol_abs)
           @test isapprox(centroid(s)[2], imag(root), atol=xtol_abs)
         end
@@ -150,7 +152,8 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
         solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
           gridsize, stopvalpole=1e15)
         @test length(solutions) == 1
-        for (s, reason) ∈ solutions
+        for (s, windingnum, reason) ∈ solutions
+          @test windingnum == -1
           @test isapprox(centroid(s)[1], real(root))
           @test isapprox(centroid(s)[2], imag(root))
         end
@@ -171,12 +174,13 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
         objective(x) = multimock(x, roots)
         solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
           gridsize, xtol_abs=xtol_abs, stopvalroot=1e-20)
-        for (s, reason) ∈ solutions
+        for (s, windingnum, reason) ∈ solutions
           passed = false
           for root ∈ roots
             passed |= (isapprox(centroid(s)[1], real(root), atol=xtol_abs) &&
                        isapprox(centroid(s)[2], imag(root), atol=xtol_abs))
           end
+          @test windingnum == 1
           @test passed
         end
       end
@@ -195,12 +199,13 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
         objective(x) = multimock(x, roots)
         solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
           gridsize, xtol_abs=xtol_abs, stopvalpole=1e20)
-        for (s, reason) ∈ solutions
+        for (s, windingnum, reason) ∈ solutions
           passed = false
           for root ∈ roots
             passed |= (isapprox(centroid(s)[1], real(root), atol=xtol_abs) &&
                        isapprox(centroid(s)[2], imag(root), atol=xtol_abs))
           end
+          @test windingnum == -1
           @test passed
         end
       end
@@ -219,13 +224,14 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
         solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
           gridsize, xtol_abs=0.0, xtol_rel=eps(), stopvalroot=eps())
         @test !isempty(solutions)
-        for (s, reason) ∈ solutions
+        for (s, windingnum, reason) ∈ solutions
           @test reason == :XTOL_REACHED || reason == :STOPVAL_ROOT_REACHED
           reason == :STOPVAL_ROOT_REACHED && continue
           difference = sqrt(sum(centroid(s) - [real(root), imag(root)]).^2)
           @test isapprox(difference, 0, atol=eps(), rtol=0)
           @test isapprox(centroid(s)[1], real(root), atol=0, rtol=eps())
           @test isapprox(centroid(s)[2], imag(root), atol=0, rtol=eps())
+          @test windingnum == 1
         end
       end
     end
@@ -245,9 +251,10 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
       solutions = TriangulatedWindingNumbers.solve(objective, lower, upper,
         1, xtol_abs=xtol_abs)
       @test length(solutions) == 1
-      for (s, reason) ∈ solutions
+      for (s, windingnum, reason) ∈ solutions
         @test isapprox(centroid(s)[1], real(root), atol=xtol_abs)
         @test isapprox(centroid(s)[2], imag(root), atol=xtol_abs)
+        @test windingnum == -1
       end
     end
 

@@ -89,11 +89,11 @@ sub-hyper-rectangles, and options passed in via kwargs.
 function solve(f::F, lower::Container{T}, upper::Container{T},
     gridsize::Container{<:Integer}; kwargs...) where {F<:Function, T<:Number}
   simplices, totaltime = generatesimplices(f, lower, upper, gridsize)
-  return solve(f, collect(simplices), totaltime; kwargs...)
+  return solve(f, collect(simplices); totaltime=totaltime, kwargs...)
 end
 
 """
-    solve(f, simplices, totaltime=0.0; kwargs...)
+    solve(f, simplices, totaltime=0.0; targetwindingnumber=iszero, kwargs...)
 
 Find the roots and poles of function, `f`, by subdividing `simplices` and
 checking to see if the child simplices contain a root or a pole by evaluating
@@ -101,6 +101,14 @@ the winding number, and options passed in via kwargs.
 
 Function `f` accepts an n-dimensional array as an argument and returns a complex
 number.
+
+Arguments
+-  f: function to find the roots and poles of
+-  simplices: collection of simplices to check
+-  totaltime (kwarg) default 0: the taken to run the calculation, used to compare
+against the timelimit kwarg.
+-  targetwindingnumber (kwarg) default iszero: a function that accepts a winding number
+of a simplex and allows the search to continue for that simplex if it returns true.
 
 # Keyword Arguments
 -  stopval (default sqrt(eps())): stopping criterion when function evaluates
@@ -118,26 +126,27 @@ vertices are close to one another by this relative tolerance
 equal to this
 -  stopvalpole (default Inf): stop if any value is greater than or equal to this
 """
-function solve(f::F, simplices::Container{Simplex{T, V}}, totaltime=0.0;
-    kwargs...) where {F<:Function, T<:Complex, V}
+function solve(f::F, simplices::Container{Simplex{T, V}};
+    totaltime=0.0, targetwindingnumber::W=!iszero,
+    kwargs...) where {F<:Function, T<:Complex, V, W<:Function}
 
   config = convergenceconfig(dimensionality(first(simplices)), float(real(T));
                              kwargs...)
 
-  solutions = Vector{Tuple{eltype(simplices), Symbol}}()
+  solutions = Set{Tuple{eltype(simplices), Int64, Symbol}}()
   while totaltime < config[:timelimit]
     newsimplices = Vector{eltype(simplices)}()
     for (i, simplex) ∈ enumerate(simplices)
-      windingnumber(simplex) == 0 && continue
+      targetwindingnumber(windingnumber(simplex)) || continue
       innermost = closestomiddlevertex(simplex)
       Δt = @elapsed centroidvertex = centroidignorevertex(f, simplex, innermost)
       for vertex ∈ simplex
         isequal(vertex, innermost) && continue
         swap!(simplex, vertex, centroidvertex)
-        if windingnumber(simplex) != 0
+        if targetwindingnumber(windingnumber(simplex))
           isconverged, returncode = assessconvergence(simplex, config)
           newsimplex = deepcopy(simplex)
-          isconverged && push!(solutions, (newsimplex, returncode))
+          isconverged && push!(solutions, (newsimplex, windingnumber(simplex), returncode))
           isconverged || push!(newsimplices, newsimplex)
         end
         swap!(simplex, centroidvertex, vertex) # swap back
