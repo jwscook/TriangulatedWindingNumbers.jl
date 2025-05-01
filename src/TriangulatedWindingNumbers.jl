@@ -1,6 +1,6 @@
 module TriangulatedWindingNumbers
 
-const Container{T} = Union{AbstractVector{T}, NTuple{N, T}} where N
+const Container{T} = Union{Set{T}, AbstractVector{T}, NTuple{N, T}} where N
 
 include("Vertexes.jl")
 include("Simplexes.jl")
@@ -89,7 +89,7 @@ sub-hyper-rectangles, and options passed in via kwargs.
 function solve(f::F, lower::Container{T}, upper::Container{T},
     gridsize::Container{<:Integer}; kwargs...) where {F<:Function, T<:Number}
   simplices, totaltime = generatesimplices(f, lower, upper, gridsize)
-  return solve(f, collect(simplices); totaltime=totaltime, kwargs...)
+  return solve(f, simplices; totaltime=totaltime, kwargs...)
 end
 
 """
@@ -133,28 +133,23 @@ function solve(f::F, simplices::Container{Simplex{T, V}};
   config = convergenceconfig(dimensionality(first(simplices)), float(real(T));
                              kwargs...)
 
+  simplices = Set(simplices) # make sure its a set
   solutions = Set{Tuple{eltype(simplices), Int64, Symbol}}()
-  while totaltime < config[:timelimit]
-    newsimplices = Vector{eltype(simplices)}()
-    for (i, simplex) ∈ enumerate(simplices)
-      targetwindingnumber(windingnumber(simplex)) || continue
-      innermost = closestomiddlevertex(simplex)
-      Δt = @elapsed centroidvertex = centroidignorevertex(f, simplex, innermost)
-      for vertex ∈ simplex
-        isequal(vertex, innermost) && continue
-        swap!(simplex, vertex, centroidvertex)
-        if targetwindingnumber(windingnumber(simplex))
-          isconverged, returncode = assessconvergence(simplex, config)
-          newsimplex = deepcopy(simplex)
-          isconverged && push!(solutions, (newsimplex, windingnumber(simplex), returncode))
-          isconverged || push!(newsimplices, newsimplex)
-        end
-        swap!(simplex, centroidvertex, vertex) # swap back
+  while !isempty(simplices) && totaltime < config[:timelimit]
+    simplex = pop!(simplices)
+    targetwindingnumber(windingnumber(simplex)) || continue
+    innermost = closestomiddlevertex(simplex)
+    Δt = @elapsed centroidvertex = centroidignorevertex(f, simplex, innermost)
+    for vertex ∈ simplex
+      isequal(vertex, innermost) && continue
+      newsimplex = deepcopy(simplex)
+      swap!(newsimplex, vertex, centroidvertex)
+      if targetwindingnumber(windingnumber(newsimplex))
+        isconverged, returncode = assessconvergence(newsimplex, config)
+        isconverged && push!(solutions, (newsimplex, windingnumber(newsimplex), returncode))
+        isconverged || push!(simplices, newsimplex)
       end
-      (totaltime += Δt) > config[:timelimit] && break
     end
-    simplices = newsimplices
-    isempty(simplices) && break
   end # while
   return solutions
 end # solve

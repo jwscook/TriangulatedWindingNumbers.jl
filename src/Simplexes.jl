@@ -18,7 +18,6 @@ Base.getindex(s::Simplex, index) = s.vertices[index]
 function Base.setindex!(s::Simplex, entry, index)
   s.vertices[index] = entry
   sortbyvertexangle!(s)
-  @assert verticesaresorted(s)
   return nothing
 end
 Base.hash(s::Simplex) = hash(s, hash(:Simplex))
@@ -29,7 +28,6 @@ sortbyvertexangle!(s::Simplex) = sort!(s.vertices, lt=(a, b)->sortby(a, centroid
 verticesaresorted(s::Simplex) = issorted(s.vertices, lt=(a, b)->sortby(b, centroid(s)) < sortby(b, centroid(s)))
 
 dimensionality(s::Simplex) = length(s) - 1
-
 
 function getvertex(s::Simplex, i::Int)
   @assert 1 <= i <= length(s)
