@@ -95,6 +95,24 @@ using TriangulatedWindingNumbers: centroid, assessconvergence, position, value
       @test returncode == :XTOL_REACHED
     end
 
+    @testset "Simplex with a NaN has a winding angle of NaN, windingnumber of 0" begin
+      v1 = Vertex(irrelevant, 1.0 - im)
+      v2 = Vertex(irrelevant, NaN + im)
+      v3 = Vertex(irrelevant, -1.0 - im)
+      nansimplex = Simplex([v1, v2, v3])
+      @test isnan(windingangle(nansimplex))
+      @test iszero(windingnumber(nansimplex))
+    end
+
+    @testset "Simplex with an Inf still works" begin
+      v1 = Vertex(irrelevant, Inf - im)
+      v2 = Vertex(irrelevant, 0.0 + im)
+      v3 = Vertex(irrelevant, -1.0 - im)
+      infsimplex = Simplex([v1, v2, v3])
+      @test windingangle(infsimplex) ≈ 2π
+      @test isone(windingnumber(infsimplex))
+    end
+
   end
 
   @testset "End-to-end tests roots" begin
